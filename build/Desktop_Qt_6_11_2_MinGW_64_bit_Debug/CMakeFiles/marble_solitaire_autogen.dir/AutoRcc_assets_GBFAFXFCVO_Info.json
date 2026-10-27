@@ -1,0 +1,31 @@
+{
+	"BUILD_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/marble_solitaire_autogen",
+	"CMAKE_BINARY_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug",
+	"CMAKE_CURRENT_BINARY_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug",
+	"CMAKE_CURRENT_SOURCE_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire",
+	"CMAKE_SOURCE_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire",
+	"CROSS_CONFIG" : false,
+	"GENERATOR" : "MinGW Makefiles",
+	"INCLUDE_DIR" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/marble_solitaire_autogen/include",
+	"INPUTS" : 
+	[
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/diamond.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/french.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/triangle.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/english.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/marble_sprites.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/asymmetrical.png",
+		"C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/jcwiegleb.png"
+	],
+	"LOCK_FILE" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/CMakeFiles/marble_solitaire_autogen.dir/AutoRcc_assets_GBFAFXFCVO_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "--no-zstd", "-name", "assets" ],
+	"OUTPUT_CHECKSUM" : "GBFAFXFCVO",
+	"OUTPUT_NAME" : "qrc_assets.cpp",
+	"RCC_EXECUTABLE" : "C:/Qt/6.11.2/mingw_64/bin/rcc.exe",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/CMakeFiles/marble_solitaire_autogen.dir/AutoRcc_assets_GBFAFXFCVO_Used.txt",
+	"SOURCE" : "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/assets/assets.qrc",
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

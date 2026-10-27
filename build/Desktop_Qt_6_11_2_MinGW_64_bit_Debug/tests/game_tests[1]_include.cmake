@@ -1,0 +1,5 @@
+if(EXISTS "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/game_tests[1]_tests.cmake")
+  include("C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/game_tests[1]_tests.cmake")
+else()
+  add_test(game_tests_NOT_BUILT game_tests_NOT_BUILT)
+endif()

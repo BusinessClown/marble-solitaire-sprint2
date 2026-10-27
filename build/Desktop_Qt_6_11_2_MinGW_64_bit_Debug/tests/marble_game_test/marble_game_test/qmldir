@@ -1,0 +1,6 @@
+module marble_game_test
+typeinfo appmarble_game_test.qmltypes
+prefer :/qt/qml/marble_game_test/
+Main 254.0 Main.qml
+depends QtQuick
+

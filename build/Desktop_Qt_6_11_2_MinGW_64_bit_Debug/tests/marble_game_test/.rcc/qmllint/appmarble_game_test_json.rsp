@@ -1,0 +1,16 @@
+--bare
+-I
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test
+-I
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/marble_game_test
+-I
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test
+-I
+C:/Qt/6.11.2/mingw_64/qml
+--resource
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/.qt/rcc/qmake_marble_game_test.qrc
+--resource
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/.qt/rcc/appmarble_game_test_raw_qml_0.qrc
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/tests/marble_game_test/Main.qml
+--json
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/appmarble_game_test_qmllint.json

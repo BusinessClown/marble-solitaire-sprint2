@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/qt/qml/marble_game_test/">
+    <file alias="Main.qml">C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/tests/marble_game_test/Main.qml</file>
+  </qresource>
+</RCC>
+

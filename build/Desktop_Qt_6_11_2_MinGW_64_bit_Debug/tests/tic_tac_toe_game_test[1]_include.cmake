@@ -1,0 +1,5 @@
+if(EXISTS "C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/tic_tac_toe_game_test[1]_tests.cmake")
+  include("C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/tic_tac_toe_game_test[1]_tests.cmake")
+else()
+  add_test(tic_tac_toe_game_test_NOT_BUILT tic_tac_toe_game_test_NOT_BUILT)
+endif()

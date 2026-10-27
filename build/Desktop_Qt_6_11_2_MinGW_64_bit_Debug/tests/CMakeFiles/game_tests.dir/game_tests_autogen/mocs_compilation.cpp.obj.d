@@ -1,0 +1,2 @@
+tests/CMakeFiles/game_tests.dir/game_tests_autogen/mocs_compilation.cpp.obj: \
+ C:\Users\insan\Downloads\style\ guide\ met\ and\ google\ test\marble_solitaire\build\Desktop_Qt_6_11_2_MinGW_64_bit_Debug\tests\game_tests_autogen\mocs_compilation.cpp

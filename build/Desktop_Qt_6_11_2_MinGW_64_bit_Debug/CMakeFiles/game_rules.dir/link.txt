@@ -1,0 +1,2 @@
+C:\Qt\Tools\mingw1310_64\bin\ar.exe qc libgame_rules.a CMakeFiles/game_rules.dir/game_rules_autogen/mocs_compilation.cpp.obj CMakeFiles/game_rules.dir/src/marble_game.cpp.obj CMakeFiles/game_rules.dir/src/tic_tac_toe_game.cc.obj
+C:\Qt\Tools\mingw1310_64\bin\ranlib.exe libgame_rules.a

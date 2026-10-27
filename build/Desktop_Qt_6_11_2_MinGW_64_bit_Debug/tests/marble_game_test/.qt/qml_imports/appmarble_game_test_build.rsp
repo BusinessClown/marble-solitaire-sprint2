@@ -1,0 +1,14 @@
+-rootPath
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/tests/marble_game_test
+-cmake-output
+-output-file
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/.qt/qml_imports/appmarble_game_test_build.cmake
+-importPath
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test
+-importPath
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/marble_game_test
+-importPath
+C:/Qt/6.11.2/mingw_64/qml
+-qrcFiles
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/.qt/rcc/qmake_marble_game_test.qrc
+C:/Users/insan/Downloads/style guide met and google test/marble_solitaire/build/Desktop_Qt_6_11_2_MinGW_64_bit_Debug/tests/marble_game_test/.qt/rcc/appmarble_game_test_raw_qml_0.qrc

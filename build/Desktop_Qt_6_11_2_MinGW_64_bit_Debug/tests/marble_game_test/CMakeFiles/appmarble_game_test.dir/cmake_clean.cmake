@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  ".qt/rcc/qrc_appmarble_game_test_raw_qml_0.cpp"
+  ".qt/rcc/qrc_qmake_marble_game_test.cpp"
+  ".rcc/qmlcache/appmarble_game_test_Main_qml.cpp"
+  ".rcc/qmlcache/appmarble_game_test_Main_qml.cpp.aotstats"
+  ".rcc/qmlcache/appmarble_game_test_qmlcache_loader.cpp"
+  "CMakeFiles/appmarble_game_test_autogen.dir/AutogenUsed.txt"
+  "CMakeFiles/appmarble_game_test_autogen.dir/ParseCache.txt"
+  "appmarble_game_test_autogen"
+  "CMakeFiles/appmarble_game_test.dir/.qt/rcc/qrc_appmarble_game_test_raw_qml_0.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/.qt/rcc/qrc_appmarble_game_test_raw_qml_0.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/.qt/rcc/qrc_qmake_marble_game_test.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/.qt/rcc/qrc_qmake_marble_game_test.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/.rcc/qmlcache/appmarble_game_test_Main_qml.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/.rcc/qmlcache/appmarble_game_test_Main_qml.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/.rcc/qmlcache/appmarble_game_test_qmlcache_loader.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/.rcc/qmlcache/appmarble_game_test_qmlcache_loader.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/appmarble_game_test_autogen/mocs_compilation.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/appmarble_game_test_autogen/mocs_compilation.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/appmarble_game_test_qmltyperegistrations.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/appmarble_game_test_qmltyperegistrations.cpp.obj.d"
+  "CMakeFiles/appmarble_game_test.dir/main.cpp.obj"
+  "CMakeFiles/appmarble_game_test.dir/main.cpp.obj.d"
+  "appmarble_game_test.exe"
+  "appmarble_game_test.exe.manifest"
+  "appmarble_game_test.pdb"
+  "appmarble_game_test_autogen/mocs_compilation.cpp"
+  "appmarble_game_test_autogen/timestamp"
+  "appmarble_game_test_qmltyperegistrations.cpp"
+  "libappmarble_game_test.dll.a"
+  "marble_game_test/appmarble_game_test.qmltypes"
+  "meta_types/appmarble_game_test_json_file_list.txt"
+  "meta_types/appmarble_game_test_json_file_list.txt.timestamp"
+  "meta_types/qt6appmarble_game_test_metatypes.json"
+  "meta_types/qt6appmarble_game_test_metatypes.json.gen"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/appmarble_game_test.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
