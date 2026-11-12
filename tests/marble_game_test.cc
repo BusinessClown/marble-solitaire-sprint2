@@ -45,17 +45,6 @@ bool ContainsMove(const std::vector<Move>& moves, const Move& wanted) {
     });
 }
 
-std::vector<Move> AllMoves(const Game& game) {
-    std::vector<Move> all;
-    for (int row = 0; row < game.rows(); ++row) {
-        for (int col = 0; col < game.cols(); ++col) {
-            const std::vector<Move> moves = game.MovesFrom(row, col);
-            all.insert(all.end(), moves.begin(), moves.end());
-        }
-    }
-    return all;
-}
-
 Position OnlyMarble(const Game& game) {
     for (int row = 0; row < game.rows(); ++row) {
         for (int col = 0; col < game.cols(); ++col) {
@@ -87,7 +76,7 @@ Outcome ExpectedOutcome(const Game& game) {
 // Plays random legal jumps until none remain.
 void PlayRandomlyUntilStuck(Game* game, std::mt19937* generator) {
     while (true) {
-        const std::vector<Move> moves = AllMoves(*game);
+        const std::vector<Move> moves = game->AllMoves();
         if (moves.empty()) {
             return;
         }
@@ -112,9 +101,9 @@ TEST(MarbleGameTest, StandardBoardsHaveExpectedHoleCounts) {
         int holes;
     };
     const Case cases[] = {
-                           {BoardShape::kFrench, 37},   {BoardShape::kJcWiegleb, 45},
+                           {BoardShape::kFrench, 37},       {BoardShape::kJcWiegleb, 45},
                            {BoardShape::kAsymmetrical, 39}, {BoardShape::kEnglish, 33},
-                           {BoardShape::kDiamond, 41},  {BoardShape::kTriangle, 15},
+                           {BoardShape::kDiamond, 41},      {BoardShape::kTriangle, 15},
                            };
     for (const Case& test_case : cases) {
         SCOPED_TRACE(static_cast<int>(test_case.shape));
@@ -219,14 +208,13 @@ TEST(MarbleGameTest, AsymmetricalBoardMatchesItsLayout) {
 TEST(MarbleGameTest, ScaledAsymmetricalBoardsHaveExpectedHoleCounts) {
     // The asymmetrical board is scaled by sampling the standard layout, so
     // each standard row and column is repeated two or three times.
-    EXPECT_EQ(CountHoles(MakeGame(BoardShape::kAsymmetrical,
-                                  BoardScale::kDouble)),
-              144);
-    EXPECT_EQ(CountHoles(MakeGame(BoardShape::kAsymmetrical,
-                                  BoardScale::kTriple)),
-              315);
+    EXPECT_EQ(
+        CountHoles(MakeGame(BoardShape::kAsymmetrical, BoardScale::kDouble)),
+        144);
+    EXPECT_EQ(
+        CountHoles(MakeGame(BoardShape::kAsymmetrical, BoardScale::kTriple)),
+        315);
 }
-
 
 TEST(MarbleGameTest, OnlyTheTriangleSpansTwoColumnsPerSpot) {
     for (BoardShape shape : kAllShapes) {
@@ -258,8 +246,10 @@ TEST(MarbleGameTest, StandardStartEmptiesTheCenterMostHole) {
         Position center;
     };
     const Case cases[] = {
-                           {BoardShape::kFrench, {3, 3}},   {BoardShape::kEnglish, {3, 3}},
-                           {BoardShape::kJcWiegleb, {4, 4}}, {BoardShape::kDiamond, {4, 4}},
+                           {BoardShape::kFrench, {3, 3}},
+                           {BoardShape::kEnglish, {3, 3}},
+                           {BoardShape::kJcWiegleb, {4, 4}},
+                           {BoardShape::kDiamond, {4, 4}},
                            {BoardShape::kTriangle, {2, 4}},
                            // The four center holes (3,3), (3,4), (4,3) and (4,4) are equally
                            // close to the middle of the 8x8 grid; the first one scanned wins.
@@ -301,7 +291,7 @@ TEST(MarbleGameTest, SpotAtOffGridIsOffBoard) {
 TEST(MarbleGameTest, EnglishBoardStartsWithTheFourCenterJumps) {
     const Game game = MakeGame(BoardShape::kEnglish);
 
-    EXPECT_EQ(AllMoves(game).size(), 4u);
+    EXPECT_EQ(game.AllMoves().size(), 4u);
     EXPECT_TRUE(game.IsMovable(1, 3));
     EXPECT_TRUE(game.IsMovable(3, 1));
     EXPECT_TRUE(game.IsMovable(3, 5));
@@ -333,18 +323,48 @@ TEST(MarbleGameTest, MovesFromReturnsNothingWithoutAJumpableMarble) {
     EXPECT_TRUE(game.MovesFrom(2, 2).empty());    // Marble with no empty beyond.
 }
 
+TEST(MarbleGameTest, AllMovesCollectsEveryMarblesJumps) {
+    EXPECT_EQ(MakeGame(BoardShape::kEnglish).AllMoves().size(), 4u);
+    EXPECT_EQ(MakeGame(BoardShape::kTriangle).AllMoves().size(), 2u);
+}
+
+TEST(MarbleGameTest, AllMovesMatchesMovesFromAcrossTheBoard) {
+    const Game game = MakeGame(BoardShape::kEnglish);
+
+    std::size_t total = 0;
+    for (int row = 0; row < game.rows(); ++row) {
+        for (int col = 0; col < game.cols(); ++col) {
+            total += game.MovesFrom(row, col).size();
+        }
+    }
+
+    const std::vector<Move> all_moves = game.AllMoves();
+    EXPECT_EQ(all_moves.size(), total);
+    EXPECT_TRUE(ContainsMove(
+        all_moves, Move{Position{1, 3}, Position{2, 3}, Position{3, 3}}));
+}
+
+TEST(MarbleGameTest, AllMovesIsEmptyWhenTheGameIsStuck) {
+    std::mt19937 generator(7);
+    Game game = MakeGame(BoardShape::kEnglish);
+    ASSERT_NO_FATAL_FAILURE(PlayRandomlyUntilStuck(&game, &generator));
+
+    EXPECT_TRUE(game.AllMoves().empty());
+    EXPECT_FALSE(game.HasMoves());
+}
+
 TEST(MarbleGameTest, TriangleStartHasTwoMovableMarbles) {
     const Game game = MakeGame(BoardShape::kTriangle);
 
-    EXPECT_EQ(AllMoves(game).size(), 2u);
+    EXPECT_EQ(game.AllMoves().size(), 2u);
     EXPECT_TRUE(game.IsMovable(4, 2));  // Diagonal jump over (3, 3).
     EXPECT_TRUE(game.IsMovable(4, 6));  // Diagonal jump over (3, 5).
 }
 
 TEST(MarbleGameTest, TriangleAllowsSidewaysJumps) {
     Game game = MakeGame(BoardShape::kTriangle);
-    ASSERT_TRUE(game.PlayMove(Move{Position{4, 2}, Position{3, 3},
-                                   Position{2, 4}}));
+    ASSERT_TRUE(
+        game.PlayMove(Move{Position{4, 2}, Position{3, 3}, Position{2, 4}}));
 
     // (4, 2) is now empty, so (4, 6) can jump along the bottom row over (4, 4).
     EXPECT_TRUE(ContainsMove(
@@ -355,8 +375,8 @@ TEST(MarbleGameTest, TriangleAllowsSidewaysJumps) {
 TEST(MarbleGameTest, PlayMoveCapturesTheJumpedMarble) {
     Game game = MakeGame(BoardShape::kEnglish);
 
-    ASSERT_TRUE(game.PlayMove(Move{Position{1, 3}, Position{2, 3},
-                                   Position{3, 3}}));
+    ASSERT_TRUE(
+        game.PlayMove(Move{Position{1, 3}, Position{2, 3}, Position{3, 3}}));
 
     EXPECT_EQ(game.SpotAt(1, 3), Spot::kEmpty);
     EXPECT_EQ(game.SpotAt(2, 3), Spot::kEmpty);
@@ -369,17 +389,17 @@ TEST(MarbleGameTest, PlayMoveRejectsIllegalMoves) {
     Game game = MakeGame(BoardShape::kEnglish);
 
     // Starting from an empty hole.
-    EXPECT_FALSE(game.PlayMove(Move{Position{3, 3}, Position{3, 4},
-                                    Position{3, 5}}));
+    EXPECT_FALSE(
+        game.PlayMove(Move{Position{3, 3}, Position{3, 4}, Position{3, 5}}));
     // Landing somewhere other than the empty hole.
-    EXPECT_FALSE(game.PlayMove(Move{Position{1, 3}, Position{2, 3},
-                                    Position{3, 4}}));
+    EXPECT_FALSE(
+        game.PlayMove(Move{Position{1, 3}, Position{2, 3}, Position{3, 4}}));
     // Jumping a marble that is not adjacent to the mover.
-    EXPECT_FALSE(game.PlayMove(Move{Position{3, 0}, Position{3, 2},
-                                    Position{3, 3}}));
+    EXPECT_FALSE(
+        game.PlayMove(Move{Position{3, 0}, Position{3, 2}, Position{3, 3}}));
     // Off the grid.
-    EXPECT_FALSE(game.PlayMove(Move{Position{-1, 0}, Position{0, 0},
-                                    Position{1, 0}}));
+    EXPECT_FALSE(
+        game.PlayMove(Move{Position{-1, 0}, Position{0, 0}, Position{1, 0}}));
 
     EXPECT_EQ(game.captured_count(), 0);
     EXPECT_EQ(game.MarblesLeft(), 32);
@@ -388,8 +408,8 @@ TEST(MarbleGameTest, PlayMoveRejectsIllegalMoves) {
 
 TEST(MarbleGameTest, ResetClearsCapturedCount) {
     Game game = MakeGame(BoardShape::kEnglish);
-    ASSERT_TRUE(game.PlayMove(Move{Position{1, 3}, Position{2, 3},
-                                   Position{3, 3}}));
+    ASSERT_TRUE(
+        game.PlayMove(Move{Position{1, 3}, Position{2, 3}, Position{3, 3}}));
     ASSERT_EQ(game.captured_count(), 1);
 
     game.Reset(BoardShape::kEnglish, StartPosition::kStandard,
@@ -401,8 +421,8 @@ TEST(MarbleGameTest, ResetClearsCapturedCount) {
 
 TEST(MarbleGameTest, HasMovesAtStartOfEveryBoard) {
     for (BoardShape shape : kAllShapes) {
-        for (BoardScale scale : {BoardScale::kStandard, BoardScale::kDouble,
-                                 BoardScale::kTriple}) {
+        for (BoardScale scale :
+             {BoardScale::kStandard, BoardScale::kDouble, BoardScale::kTriple}) {
             SCOPED_TRACE(static_cast<int>(shape) * 10 + static_cast<int>(scale));
             EXPECT_TRUE(MakeGame(shape, scale).HasMoves());
         }

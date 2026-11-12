@@ -1,6 +1,7 @@
 #ifndef MARBLE_SOLITAIRE_SRC_MARBLE_BOARD_WIDGET_H_
 #define MARBLE_SOLITAIRE_SRC_MARBLE_BOARD_WIDGET_H_
 
+#include <cstddef>
 #include <vector>
 
 #include <QColor>
@@ -22,7 +23,8 @@ class QVariantAnimation;
 
 // Draws a marble solitaire board using frames from a sprite sheet, lets the
 // player select and jump marbles, animates each jump, and plays a confetti
-// or smoke effect when the game ends.
+// or smoke effect when the game ends. It can also play the game itself, by
+// random jumps or by following a winning line.
 //
 // All rules live in marble::Game; this class holds only the selection,
 // animation and effect state. The board is sized to leave room around it for
@@ -36,8 +38,11 @@ public:
     explicit MarbleBoardWidget(QWidget* parent = nullptr);
 
     // Sets up a fresh board, cancelling any selection, animation or effect.
+    // With `auto_play` other than kOff the computer makes every move and the
+    // player's clicks are ignored. kWin searches for a winning line here, which
+    // can take a moment on large boards.
     void StartGame(marble::BoardShape shape, marble::StartPosition start,
-                   marble::BoardScale scale);
+                   marble::BoardScale scale, marble::AutoPlayMode auto_play);
 
 signals:
     // Emitted once when no marble can move any more.
@@ -118,6 +123,12 @@ private:
     void StartMoveAnimation(marble::Move move);
     void FinishMoveAnimation();
 
+    // Auto play. Each automatic move is made after a short pause.
+    // ScheduleAutoMove() starts the pause if auto play is on, and
+    // PlayAutoMove() makes the move when it ends.
+    void ScheduleAutoMove();
+    void PlayAutoMove();
+
     // Ends the game and reports the outcome if no marble can move.
     void CheckForGameOver();
 
@@ -150,6 +161,13 @@ private:
     marble::Move animated_move_;
     double slide_progress_ = 0.0;  // 0 to 1.
     double exit_progress_ = 0.0;   // 0 to 1.
+
+    // Auto play. planned_moves_ is the winning line for kWin; it is empty if
+    // none was found, in which case moves are random.
+    marble::AutoPlayMode auto_play_ = marble::AutoPlayMode::kOff;
+    std::vector<marble::Move> planned_moves_;
+    std::size_t next_planned_move_ = 0;
+    QTimer* auto_play_timer_ = nullptr;
 
     // Game over and its effect.
     bool is_game_over_ = false;

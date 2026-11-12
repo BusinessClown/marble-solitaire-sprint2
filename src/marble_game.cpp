@@ -1,11 +1,11 @@
 #include "marble_game.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <random>
 #include <vector>
-#include <array>
 
 namespace marble {
 namespace {
@@ -23,7 +23,7 @@ constexpr int kTriangleRowCount = 5;
 constexpr int kAsymmetricalSide = 8;
 
 // Standard-size asymmetrical board, scaled by nearest-neighbour sampling.
-// '#' is a hole, '.' is outside the board. NOTE: 37 holes; check this against
+// '#' is a hole, '.' is outside the board. NOTE: 39 holes; check this against
 // asymmetrical.png and adjust to taste.
 constexpr const char* kAsymmetricalRows[kAsymmetricalSide] = {
     "..###...",
@@ -172,11 +172,8 @@ DirectionSet DirectionsFor(int columns_per_spot) {
 
 }  // namespace
 
-
-
 Game::Game() {
-    Reset(BoardShape::kEnglish, StartPosition::kStandard,
-          BoardScale::kStandard);
+    Reset(BoardShape::kEnglish, StartPosition::kStandard, BoardScale::kStandard);
 }
 
 void Game::Reset(BoardShape shape, StartPosition start, BoardScale scale) {
@@ -236,13 +233,23 @@ std::vector<Move> Game::MovesFrom(int row, int col) const {
     return moves;
 }
 
+std::vector<Move> Game::AllMoves() const {
+    std::vector<Move> all_moves;
+    for (int row = 0; row < rows_; ++row) {
+        for (int col = 0; col < cols_; ++col) {
+            const std::vector<Move> moves = MovesFrom(row, col);
+            all_moves.insert(all_moves.end(), moves.begin(), moves.end());
+        }
+    }
+    return all_moves;
+}
+
 bool Game::IsMovable(int row, int col) const {
     return !MovesFrom(row, col).empty();
 }
 
 bool Game::PlayMove(const Move& move) {
-    const std::vector<Move> legal_moves =
-        MovesFrom(move.from.row, move.from.col);
+    const std::vector<Move> legal_moves = MovesFrom(move.from.row, move.from.col);
     const bool is_legal =
         std::any_of(legal_moves.begin(), legal_moves.end(),
                     [&move](const Move& legal) {
@@ -306,4 +313,5 @@ Outcome Game::FinalOutcome() const {
         return Outcome::kFiveOrMoreLeft;
     }
 }
+
 }  // namespace marble

@@ -13,12 +13,16 @@ set(CMAKE_AUTOUIC ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
-# The game rules depend only on the standard library, so they live in their
-# own library. The app links it, and so do the unit tests, which keeps Qt out
-# of the test build.
+# The game rules, the solver and the tic-tac-toe computer player depend only on
+# the standard library, so they live in their own library. The app links it,
+# and so do the unit tests, which keeps Qt out of the test build.
 add_library(game_rules STATIC
   src/marble_game.cpp
   src/marble_game.h
+  src/marble_solver.cpp
+  src/marble_solver.h
+  src/tic_tac_toe_ai.cpp
+  src/tic_tac_toe_ai.h
   src/tic_tac_toe_game.cc
   src/tic_tac_toe_game.h
 )

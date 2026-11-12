@@ -7,20 +7,22 @@
 #include <QColor>
 #include <QDebug>
 #include <QEasingCurve>
+#include <QHideEvent>
 #include <QLineF>
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QPen>
+#include <QRandomGenerator>
 #include <QRectF>
 #include <QSequentialAnimationGroup>
+#include <QShowEvent>
 #include <QString>
+#include <QTimer>
 #include <QVariant>
 #include <QVariantAnimation>
-#include <QHideEvent>
-#include <QRandomGenerator>
-#include <QShowEvent>
-#include <QTimer>
+
+#include "marble_solver.h"
 
 namespace {
 
@@ -43,6 +45,9 @@ constexpr double kPi = 3.14159265358979323846;
 constexpr int kSlideDurationMs = 350;
 constexpr int kExitDurationMs = 450;
 
+// Pause before each automatic move, in milliseconds.
+constexpr int kAutoPlayDelayMs = 400;
+
 QPointF Lerp(const QPointF& from, const QPointF& to, double t) {
     return from + (to - from) * t;
 }
@@ -62,11 +67,11 @@ constexpr double kSmokeRate = 14.0;  // Per smoking marble.
 double RandomBetween(double low, double high) {
     return low + (high - low) * QRandomGenerator::global()->generateDouble();
 }
+
 }  // namespace
 
 MarbleBoardWidget::MarbleBoardWidget(QWidget* parent)
-    : QWidget(parent),
-    sprite_sheet_(QString::fromUtf8(kSpriteSheetPath)) {
+    : QWidget(parent), sprite_sheet_(QString::fromUtf8(kSpriteSheetPath)) {
     setMinimumSize(kMinimumSide, kMinimumSide);
     if (sprite_sheet_.isNull()) {
         qWarning() << "Could not load sprite sheet" << kSpriteSheetPath
@@ -106,13 +111,21 @@ MarbleBoardWidget::MarbleBoardWidget(QWidget* parent)
     connect(effect_timer_, &QTimer::timeout, this,
             [this]() { AdvanceEffects(); });
 
+    auto_play_timer_ = new QTimer(this);
+    auto_play_timer_->setSingleShot(true);
+    auto_play_timer_->setInterval(kAutoPlayDelayMs);
+    connect(auto_play_timer_, &QTimer::timeout, this,
+            [this]() { PlayAutoMove(); });
+
     BuildCaptureSlots();
 }
 
 void MarbleBoardWidget::StartGame(marble::BoardShape shape,
                                   marble::StartPosition start,
-                                  marble::BoardScale scale) {
+                                  marble::BoardScale scale,
+                                  marble::AutoPlayMode auto_play) {
     move_animation_->stop();
+    auto_play_timer_->stop();
     is_animating_ = false;
     is_game_over_ = false;
     slide_progress_ = 0.0;
@@ -120,10 +133,20 @@ void MarbleBoardWidget::StartGame(marble::BoardShape shape,
     StopEffects();
     ClearSelection();
 
+    auto_play_ = auto_play;
+    planned_moves_.clear();
+    next_planned_move_ = 0;
+
     game_.Reset(shape, start, scale);
+    if (auto_play_ == marble::AutoPlayMode::kWin) {
+        planned_moves_ = marble::FindBestSolution(game_).moves;
+    }
     BuildCaptureSlots();
     update();
     CheckForGameOver();
+    if (!is_game_over_) {
+        ScheduleAutoMove();
+    }
 }
 
 void MarbleBoardWidget::BuildCaptureSlots() {
@@ -137,8 +160,8 @@ void MarbleBoardWidget::BuildCaptureSlots() {
             }
             ++hole_count;
             const QPointF offset = SpotOffset(row, col);
-            board_radius = std::max(
-                board_radius, std::hypot(offset.x(), offset.y()) + 0.5);
+            board_radius =
+                std::max(board_radius, std::hypot(offset.x(), offset.y()) + 0.5);
         }
     }
 
@@ -165,8 +188,7 @@ void MarbleBoardWidget::BuildCaptureSlots() {
 
 MarbleBoardWidget::Layout MarbleBoardWidget::ComputeLayout() const {
     Layout layout;
-    layout.spot_side =
-        std::min(width(), height()) / (2.0 * extent_radius_);
+    layout.spot_side = std::min(width(), height()) / (2.0 * extent_radius_);
     layout.center = QPointF(width() / 2.0, height() / 2.0);
     return layout;
 }
@@ -327,8 +349,7 @@ void MarbleBoardWidget::paintEvent(QPaintEvent* event) {
 
     // Captured marbles already at rest. While a jump is animating, the newest
     // one is still travelling and is drawn below instead.
-    const int resting_captured =
-        game_.captured_count() - (is_animating_ ? 1 : 0);
+    const int resting_captured = game_.captured_count() - (is_animating_ ? 1 : 0);
     for (int i = 0; i < resting_captured; ++i) {
         DrawSprite(&painter, Sprite::kMarble, CaptureSlotCenter(layout, i),
                    captured_side);
@@ -343,14 +364,13 @@ void MarbleBoardWidget::paintEvent(QPaintEvent* event) {
     // The jumped marble stays put while the jumper slides over it, then slides
     // out to its slot in the ring, shrinking as it goes. The jumper is drawn
     // last so it passes over the marble it jumps.
-    const QPointF from = SpotCenter(layout, animated_move_.from.row,
-                                    animated_move_.from.col);
-    const QPointF over = SpotCenter(layout, animated_move_.over.row,
-                                    animated_move_.over.col);
+    const QPointF from =
+        SpotCenter(layout, animated_move_.from.row, animated_move_.from.col);
+    const QPointF over =
+        SpotCenter(layout, animated_move_.over.row, animated_move_.over.col);
     const QPointF to =
         SpotCenter(layout, animated_move_.to.row, animated_move_.to.col);
-    const QPointF slot =
-        CaptureSlotCenter(layout, game_.captured_count() - 1);
+    const QPointF slot = CaptureSlotCenter(layout, game_.captured_count() - 1);
 
     const double jumped_side =
         layout.spot_side + (captured_side - layout.spot_side) * exit_progress_;
@@ -361,7 +381,9 @@ void MarbleBoardWidget::paintEvent(QPaintEvent* event) {
 }
 
 void MarbleBoardWidget::mousePressEvent(QMouseEvent* event) {
-    if (is_animating_ || is_game_over_ || event->button() != Qt::LeftButton) {
+    // While the computer is playing, the board is watch-only.
+    if (auto_play_ != marble::AutoPlayMode::kOff || is_animating_ ||
+        is_game_over_ || event->button() != Qt::LeftButton) {
         return;
     }
 
@@ -424,6 +446,38 @@ void MarbleBoardWidget::FinishMoveAnimation() {
     exit_progress_ = 0.0;
     update();
     CheckForGameOver();
+    if (!is_game_over_) {
+        ScheduleAutoMove();
+    }
+}
+
+void MarbleBoardWidget::ScheduleAutoMove() {
+    if (auto_play_ != marble::AutoPlayMode::kOff) {
+        auto_play_timer_->start();
+    }
+}
+
+void MarbleBoardWidget::PlayAutoMove() {
+    // If the board is hidden, showEvent() resumes auto play when it returns.
+    if (auto_play_ == marble::AutoPlayMode::kOff || is_animating_ ||
+        is_game_over_ || !isVisible()) {
+        return;
+    }
+
+    if (auto_play_ == marble::AutoPlayMode::kWin &&
+        next_planned_move_ < planned_moves_.size()) {
+        StartMoveAnimation(planned_moves_[next_planned_move_++]);
+        return;
+    }
+
+    // Random mode, or Win mode when no winning line was found.
+    const std::vector<marble::Move> moves = game_.AllMoves();
+    if (moves.empty()) {
+        return;
+    }
+    const int pick =
+        QRandomGenerator::global()->bounded(static_cast<int>(moves.size()));
+    StartMoveAnimation(moves[pick]);
 }
 
 void MarbleBoardWidget::CheckForGameOver() {
@@ -518,8 +572,8 @@ void MarbleBoardWidget::AdvanceEffects() {
                        }),
         particles_.end());
 
-    if (effect_ == Effect::kConfetti &&
-        effect_time_ >= kConfettiStreamSeconds && particles_.empty()) {
+    if (effect_ == Effect::kConfetti && effect_time_ >= kConfettiStreamSeconds &&
+        particles_.empty()) {
         StopEffects();
     }
     update();
@@ -538,8 +592,8 @@ void MarbleBoardWidget::EmitConfetti(const QPointF& origin) {
     particle.size = RandomBetween(0.12, 0.22);
     particle.rotation = RandomBetween(0.0, 360.0);
     particle.spin = RandomBetween(-540.0, 540.0);
-    particle.color = QColor::fromHsv(
-        static_cast<int>(RandomBetween(0.0, 359.0)), 200, 255);
+    particle.color =
+        QColor::fromHsv(static_cast<int>(RandomBetween(0.0, 359.0)), 200, 255);
     particles_.push_back(particle);
 }
 
@@ -558,8 +612,7 @@ void MarbleBoardWidget::DrawParticles(QPainter* painter,
                                       const Layout& layout) const {
     for (const Particle& particle : particles_) {
         const double life = particle.age / particle.lifetime;  // 0 to 1.
-        const QPointF center =
-            layout.center + particle.position * layout.spot_side;
+        const QPointF center = layout.center + particle.position * layout.spot_side;
         const double side = particle.size * layout.spot_side;
         QColor color = particle.color;
 
@@ -589,9 +642,13 @@ void MarbleBoardWidget::showEvent(QShowEvent* event) {
         frame_clock_.restart();
         effect_timer_->start();
     }
+    if (!is_animating_ && !is_game_over_) {
+        ScheduleAutoMove();
+    }
 }
 
 void MarbleBoardWidget::hideEvent(QHideEvent* event) {
     QWidget::hideEvent(event);
     effect_timer_->stop();  // No point animating while another page is shown.
+    auto_play_timer_->stop();
 }

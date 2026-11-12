@@ -26,6 +26,13 @@ enum class StartPosition { kStandard = 0, kRandom = 1 };
 // main_window.cc.
 enum class BoardScale { kStandard = 1, kDouble = 2, kTriple = 3 };
 
+// Whether the computer plays the game. The values must match the ids given to
+// the tiles in kAutoPlayOptions in main_window.cc.
+//
+// kRandom makes a random legal jump each turn. kWin plays a sequence of jumps
+// found by marble_solver.h that leaves one marble.
+enum class AutoPlayMode { kOff = 0, kRandom = 1, kWin = 2 };
+
 // How a finished game went, judged by the marbles left. kPerfectGame is the
 // last marble sitting where the starting hole was; kWin is one marble left
 // anywhere else.
@@ -38,8 +45,9 @@ enum class Outcome {
     kFiveOrMoreLeft,
 };
 
-// State of one grid location.
-enum class Spot { kOffBoard, kMarble, kEmpty };
+// State of one grid location. The small underlying type keeps copies of Game
+// cheap, which matters to the solver.
+enum class Spot : unsigned char { kOffBoard, kMarble, kEmpty };
 
 // A board coordinate.
 struct Position {
@@ -94,6 +102,9 @@ public:
     // orthogonal directions; the triangle allows six.
     std::vector<Move> MovesFrom(int row, int col) const;
 
+    // Returns every jump available to any marble on the board.
+    std::vector<Move> AllMoves() const;
+
     // Returns true if the marble at (row, col) has at least one jump.
     bool IsMovable(int row, int col) const;
 
@@ -124,7 +135,6 @@ private:
     int columns_per_spot_ = 1;
     int captured_count_ = 0;
     Position start_hole_;
-
 };
 
 }  // namespace marble

@@ -2,6 +2,7 @@
 #define MARBLE_SOLITAIRE_SRC_MAIN_WINDOW_H_
 
 #include <QMainWindow>
+
 #include "marble_game.h"
 
 class QButtonGroup;
@@ -11,7 +12,6 @@ class QShowEvent;
 class QStackedWidget;
 class QWidget;
 class MarbleBoardWidget;
-
 class TicTacToeWidget;
 
 // Top-level application window.
@@ -57,7 +57,6 @@ private slots:
 
     void ShowMarbleResult(marble::Outcome outcome);
 
-
 private:
     // Page builders. Each is called once from the constructor and returns a
     // widget that the stacked widget takes ownership of.
@@ -69,6 +68,10 @@ private:
 
     // Shows one page and logs the transition.
     void ShowPage(Page page);
+
+    // Applies the opponent and difficulty choices, then starts a tic-tac-toe
+    // game.
+    void StartTicTacToe(bool x_goes_first);
 
     // Fades in the greeting, decoration and both buttons on the main page in
     // a staggered sequence. Called once from showEvent().
@@ -93,6 +96,9 @@ private:
     // "Who goes first?" page.
     QPushButton* choose_x_button_ = nullptr;
     QPushButton* choose_o_button_ = nullptr;
+    QButtonGroup* opponent_group_ = nullptr;
+    QButtonGroup* difficulty_group_ = nullptr;
+    QWidget* difficulty_container_ = nullptr;  // Shown only when vs CPU.
 
     // Tic-tac-toe page.
     TicTacToeWidget* tic_tac_toe_ = nullptr;
@@ -103,9 +109,10 @@ private:
     // Marble solitaire setup page.
     QButtonGroup* board_group_ = nullptr;
     QButtonGroup* start_position_group_ = nullptr;
+    QButtonGroup* scale_group_ = nullptr;
+    QButtonGroup* auto_play_group_ = nullptr;
     QPushButton* marble_back_button_ = nullptr;
     QPushButton* marble_start_button_ = nullptr;
-    QButtonGroup* scale_group_ = nullptr;
 
     // Marble solitaire game page.
     MarbleBoardWidget* marble_board_ = nullptr;

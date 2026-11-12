@@ -6,6 +6,7 @@ if(NOT GTest_FOUND)
   FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   )
   # On Windows, use the same runtime library as the rest of the project.
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -13,8 +14,10 @@ if(NOT GTest_FOUND)
 endif()
 
 add_executable(game_tests
-  tic_tac_toe_game_test.cc
   marble_game_test.cc
+  marble_solver_test.cpp
+  tic_tac_toe_ai_test.cpp
+  tic_tac_toe_game_test.cc
 )
 target_link_libraries(game_tests PRIVATE
   game_rules

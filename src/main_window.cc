@@ -1,5 +1,7 @@
 #include "main_window.h"
 
+#include <QAbstractAnimation>
+#include <QAbstractButton>
 #include <QButtonGroup>
 #include <QDebug>
 #include <QEasingCurve>
@@ -17,15 +19,15 @@
 #include <QString>
 #include <QToolButton>
 #include <QVBoxLayout>
-#include <QVector>
 
 #include "marble_board_widget.h"
 #include "marble_game.h"
+#include "tic_tac_toe_ai.h"
 #include "tic_tac_toe_widget.h"
 
 namespace {
 
-// One selectable tile on the marble solitaire setup page.
+// One selectable tile on a setup page.
 struct TileOption {
     const char* icon_path;
     const char* label;
@@ -62,8 +64,33 @@ constexpr TileOption kScaleOptions[] = {
     {nullptr, "3x", 3},
     };
 
+// Whether the computer plays marble solitaire. The ids are the
+// marble::AutoPlayMode values; see marble_game.h.
+constexpr TileOption kAutoPlayOptions[] = {
+    {nullptr, "Off", 0},
+    {nullptr, "Random", 1},
+    {nullptr, "Win", 2},
+    };
+
+// Id of the "vs CPU" tile in kOpponentOptions.
+constexpr int kVsCpuId = 1;
+
+// Who the tic-tac-toe player faces.
+constexpr TileOption kOpponentOptions[] = {
+    {nullptr, "2 Player", 0},
+    {nullptr, "vs CPU", kVsCpuId},
+    };
+
+// How well the computer plays tic-tac-toe. The ids are the
+// tictactoe::Difficulty values; see tic_tac_toe_ai.h.
+constexpr TileOption kDifficultyOptions[] = {
+    {nullptr, "Easy", 0},
+    {nullptr, "Normal", 1},
+    {nullptr, "Hard", 2},
+    };
+
 constexpr int kWindowWidth = 450;
-constexpr int kWindowHeight = 550;
+constexpr int kWindowHeight = 650;
 constexpr int kBoardIconSide = 128;
 constexpr int kNoIcon = 0;  // Icon size for text-only tiles.
 
@@ -172,8 +199,7 @@ QWidget* MainWindow::CreateMainPage() {
 
     greeting_label_ = new QLabel(tr("Welcome to Fun Fun Games!"), page);
     greeting_label_->setAlignment(Qt::AlignCenter);
-    greeting_label_->setStyleSheet(
-        QString::fromUtf8(kGreetingLabelStyleSheet));
+    greeting_label_->setStyleSheet(QString::fromUtf8(kGreetingLabelStyleSheet));
 
     play_tic_tac_toe_button_ = new QPushButton(tr("Play Tic-Tac-Toe"), page);
     play_tic_tac_toe_button_->setStyleSheet("font-size: 14px; padding: 8px;");
@@ -212,6 +238,51 @@ QWidget* MainWindow::CreateChooseFirstPlayerPage() {
     title->setAlignment(Qt::AlignCenter);
     title->setStyleSheet("font-size: 22px; font-weight: bold;");
 
+    QLabel* opponent_label = new QLabel(tr("Opponent:"), page);
+    opponent_label->setAlignment(Qt::AlignCenter);
+
+    opponent_group_ = new QButtonGroup(page);
+    opponent_group_->setExclusive(true);
+
+    QHBoxLayout* opponent_layout = new QHBoxLayout;
+    for (const TileOption& option : kOpponentOptions) {
+        opponent_layout->addWidget(
+            CreateTile(option, kNoIcon, opponent_group_, page));
+    }
+    opponent_group_->button(0)->setChecked(true);
+
+    // Difficulty only matters against the CPU, so its controls live in a
+    // container that is shown only while "vs CPU" is chosen.
+    difficulty_container_ = new QWidget(page);
+    QVBoxLayout* difficulty_layout = new QVBoxLayout(difficulty_container_);
+    difficulty_layout->setContentsMargins(0, 0, 0, 0);
+
+    QLabel* cpu_note =
+        new QLabel(tr("You play X. The CPU plays O."), difficulty_container_);
+    cpu_note->setAlignment(Qt::AlignCenter);
+
+    QLabel* difficulty_label =
+        new QLabel(tr("CPU difficulty:"), difficulty_container_);
+    difficulty_label->setAlignment(Qt::AlignCenter);
+
+    difficulty_group_ = new QButtonGroup(page);
+    difficulty_group_->setExclusive(true);
+
+    QHBoxLayout* difficulty_tiles = new QHBoxLayout;
+    for (const TileOption& option : kDifficultyOptions) {
+        difficulty_tiles->addWidget(
+            CreateTile(option, kNoIcon, difficulty_group_, difficulty_container_));
+    }
+    difficulty_group_->button(1)->setChecked(true);
+
+    difficulty_layout->addWidget(cpu_note);
+    difficulty_layout->addWidget(difficulty_label);
+    difficulty_layout->addLayout(difficulty_tiles);
+    difficulty_container_->setVisible(false);
+
+    connect(opponent_group_->button(kVsCpuId), &QAbstractButton::toggled,
+            difficulty_container_, &QWidget::setVisible);
+
     choose_x_button_ = new QPushButton(tr("X goes first"), page);
     choose_o_button_ = new QPushButton(tr("O goes first"), page);
     choose_x_button_->setStyleSheet("font-size: 16px; padding: 12px;");
@@ -220,6 +291,10 @@ QWidget* MainWindow::CreateChooseFirstPlayerPage() {
     // The stretches above and below centre the content vertically.
     layout->addStretch();
     layout->addWidget(title);
+    layout->addSpacing(20);
+    layout->addWidget(opponent_label);
+    layout->addLayout(opponent_layout);
+    layout->addWidget(difficulty_container_);
     layout->addSpacing(20);
     layout->addWidget(choose_x_button_);
     layout->addWidget(choose_o_button_);
@@ -263,7 +338,8 @@ QWidget* MainWindow::CreateTicTacToePage() {
     connect(game_back_button_, &QPushButton::clicked, this,
             &MainWindow::ShowMainPage);
 
-    // A mid-game reset always gives the first move back to X.
+    // A mid-game reset always gives the first move back to X. The opponent
+    // choice is kept.
     connect(game_reset_button_, &QPushButton::clicked, this,
             [this]() { tic_tac_toe_->ResetBoard(true); });
 
@@ -315,16 +391,28 @@ QWidget* MainWindow::CreateMarbleBoardPage() {
 
     QHBoxLayout* scale_layout = new QHBoxLayout;
     for (const TileOption& option : kScaleOptions) {
-        scale_layout->addWidget(
-            CreateTile(option, kNoIcon, scale_group_, page));
+        scale_layout->addWidget(CreateTile(option, kNoIcon, scale_group_, page));
     }
     scale_group_->button(1)->setChecked(true);
 
+    QLabel* auto_play_label = new QLabel(tr("Auto play:"), page);
+    auto_play_label->setAlignment(Qt::AlignCenter);
+
+    auto_play_group_ = new QButtonGroup(page);
+    auto_play_group_->setExclusive(true);
+
+    QHBoxLayout* auto_play_layout = new QHBoxLayout;
+    for (const TileOption& option : kAutoPlayOptions) {
+        auto_play_layout->addWidget(
+            CreateTile(option, kNoIcon, auto_play_group_, page));
+    }
+    auto_play_group_->button(0)->setChecked(true);
+
     marble_back_button_ = new QPushButton(tr("Back"), page);
+    marble_start_button_ = new QPushButton(tr("Start Game"), page);
+
     QHBoxLayout* button_layout = new QHBoxLayout;
     button_layout->addWidget(marble_back_button_);
-
-    marble_start_button_ = new QPushButton(tr("Start Game"), page);
     button_layout->addWidget(marble_start_button_);
 
     layout->addWidget(title);
@@ -335,18 +423,16 @@ QWidget* MainWindow::CreateMarbleBoardPage() {
     layout->addWidget(start_label);
     layout->addLayout(start_layout);
     layout->addSpacing(20);
-    layout->addSpacing(20);
     layout->addWidget(scale_label);
     layout->addLayout(scale_layout);
+    layout->addSpacing(20);
+    layout->addWidget(auto_play_label);
+    layout->addLayout(auto_play_layout);
     layout->addLayout(button_layout);
     layout->addStretch();
 
     connect(marble_back_button_, &QPushButton::clicked, this,
             &MainWindow::ShowMainPage);
-
-    connect(marble_start_button_, &QPushButton::clicked, this,
-            &MainWindow::ShowMainPage);
-
     connect(marble_start_button_, &QPushButton::clicked, this,
             &MainWindow::StartMarbleGame);
 
@@ -360,8 +446,6 @@ QWidget* MainWindow::CreateMarbleGamePage() {
     QLabel* title = new QLabel(tr("Marble Solitaire"), page);
     title->setAlignment(Qt::AlignCenter);
     title->setStyleSheet("font-size: 20px; font-weight: bold;");
-
-    marble_board_ = new MarbleBoardWidget;
 
     marble_board_ = new MarbleBoardWidget(page);
 
@@ -380,10 +464,8 @@ QWidget* MainWindow::CreateMarbleGamePage() {
 
     layout->addWidget(title);
     layout->addWidget(marble_board_, 1);
-    layout->addWidget(marble_board_, 1);
     layout->addWidget(marble_result_headline_label_);
     layout->addWidget(marble_result_detail_label_);
-    layout->addWidget(marble_game_back_button_);
     layout->addWidget(marble_game_back_button_);
 
     // Back returns to the setup page so a different board can be chosen.
@@ -394,7 +476,6 @@ QWidget* MainWindow::CreateMarbleGamePage() {
             &MainWindow::ShowMarbleResult);
 
     return page;
-
 }
 
 void MainWindow::StartMarbleGame() {
@@ -405,7 +486,8 @@ void MainWindow::StartMarbleGame() {
     marble_board_->StartGame(
         static_cast<marble::BoardShape>(board_group_->checkedId()),
         static_cast<marble::StartPosition>(start_position_group_->checkedId()),
-        static_cast<marble::BoardScale>(scale_group_->checkedId()));
+        static_cast<marble::BoardScale>(scale_group_->checkedId()),
+        static_cast<marble::AutoPlayMode>(auto_play_group_->checkedId()));
     ShowPage(Page::kMarbleGame);
 }
 
@@ -455,13 +537,17 @@ void MainWindow::ShowChooseFirstPlayerPage() {
 
 void MainWindow::ShowMarbleBoardPage() { ShowPage(Page::kMarbleBoard); }
 
-void MainWindow::StartGameWithX() {
-    tic_tac_toe_->ResetBoard(true);
-    ShowPage(Page::kTicTacToe);
-}
+void MainWindow::StartGameWithX() { StartTicTacToe(true); }
 
-void MainWindow::StartGameWithO() {
-    tic_tac_toe_->ResetBoard(false);
+void MainWindow::StartGameWithO() { StartTicTacToe(false); }
+
+void MainWindow::StartTicTacToe(bool x_goes_first) {
+    // The difficulty group ids are the enum values; see tic_tac_toe_ai.h.
+    const bool vs_cpu = opponent_group_->checkedId() == kVsCpuId;
+    tic_tac_toe_->SetOpponent(
+        vs_cpu,
+        static_cast<tictactoe::Difficulty>(difficulty_group_->checkedId()));
+    tic_tac_toe_->ResetBoard(x_goes_first);
     ShowPage(Page::kTicTacToe);
 }
 
@@ -478,10 +564,8 @@ void MainWindow::PlayIntroAnimation() {
     // page builds itself up piece by piece instead of popping in all at
     // once.
     auto* group = new QParallelAnimationGroup(this);
-    group->addAnimation(
-        BuildFadeInAnimation(greeting_decoration_label_, 0));
-    group->addAnimation(
-        BuildFadeInAnimation(greeting_label_, kIntroStaggerMs));
+    group->addAnimation(BuildFadeInAnimation(greeting_decoration_label_, 0));
+    group->addAnimation(BuildFadeInAnimation(greeting_label_, kIntroStaggerMs));
     group->addAnimation(
         BuildFadeInAnimation(play_tic_tac_toe_button_, kIntroStaggerMs * 2));
     group->addAnimation(
@@ -511,4 +595,3 @@ void MainWindow::StartGreetingPulse() {
     pulse->setLoopCount(-1);  // Repeats for as long as the window is open.
     pulse->start(QAbstractAnimation::DeleteWhenStopped);
 }
-

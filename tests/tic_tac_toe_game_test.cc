@@ -1,6 +1,7 @@
 #include "tic_tac_toe_game.h"
 
 #include <array>
+#include <cstddef>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -126,7 +127,7 @@ TEST(TicTacToeGameTest, CellAtOffBoardIsEmpty) {
 }
 
 TEST(TicTacToeGameTest, EveryLineWinsForX) {
-    for (size_t i = 0; i < kLines.size(); ++i) {
+    for (std::size_t i = 0; i < kLines.size(); ++i) {
         SCOPED_TRACE(i);
         Game game;
         ASSERT_NO_FATAL_FAILURE(PlayWinningLine(&game, Player::kX, kLines[i]));
@@ -142,7 +143,7 @@ TEST(TicTacToeGameTest, EveryLineWinsForX) {
 }
 
 TEST(TicTacToeGameTest, EveryLineWinsForO) {
-    for (size_t i = 0; i < kLines.size(); ++i) {
+    for (std::size_t i = 0; i < kLines.size(); ++i) {
         SCOPED_TRACE(i);
         Game game;
         ASSERT_NO_FATAL_FAILURE(PlayWinningLine(&game, Player::kO, kLines[i]));
@@ -198,6 +199,47 @@ TEST(TicTacToeGameTest, ResetAfterWinClearsBoardAndState) {
     EXPECT_EQ(game.state(), GameState::kInProgress);
     EXPECT_EQ(CountCells(game, Cell::kEmpty), 9);
     EXPECT_TRUE(game.PlayMove(0, 0));
+}
+
+TEST(TicTacToeGameTest, WouldWinDetectsACompletingCell) {
+    // X has (0, 0) and (0, 1); O has (1, 0) and (1, 1); X to move.
+    const Position moves[] = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+    Game game;
+    for (const Position& move : moves) {
+        ASSERT_TRUE(game.PlayMove(move.row, move.col));
+    }
+
+    EXPECT_TRUE(game.WouldWin(Player::kX, 0, 2));
+    // It does not have to be that player's turn.
+    EXPECT_TRUE(game.WouldWin(Player::kO, 1, 2));
+    EXPECT_FALSE(game.WouldWin(Player::kX, 1, 2));
+    EXPECT_FALSE(game.WouldWin(Player::kO, 0, 2));
+    EXPECT_FALSE(game.WouldWin(Player::kX, 2, 2));
+}
+
+TEST(TicTacToeGameTest, WouldWinIsFalseForTakenOrOffBoardCells) {
+    const Position moves[] = {{0, 0}, {1, 0}, {0, 1}, {1, 1}};
+    Game game;
+    for (const Position& move : moves) {
+        ASSERT_TRUE(game.PlayMove(move.row, move.col));
+    }
+
+    EXPECT_FALSE(game.WouldWin(Player::kX, 0, 0));
+    EXPECT_FALSE(game.WouldWin(Player::kX, -1, 2));
+    EXPECT_FALSE(game.WouldWin(Player::kX, 0, Game::kBoardSize));
+}
+
+TEST(TicTacToeGameTest, WouldWinIsFalseOnceGameIsOver) {
+    Game game;
+    ASSERT_NO_FATAL_FAILURE(PlayWinningLine(&game, Player::kX, kLines[0]));
+    ASSERT_TRUE(game.is_over());
+
+    for (int row = 0; row < Game::kBoardSize; ++row) {
+        for (int col = 0; col < Game::kBoardSize; ++col) {
+            EXPECT_FALSE(game.WouldWin(Player::kX, row, col));
+            EXPECT_FALSE(game.WouldWin(Player::kO, row, col));
+        }
+    }
 }
 
 }  // namespace
